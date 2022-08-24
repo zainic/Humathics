@@ -5,18 +5,22 @@ import java.awt.image.*;
 
 import javax.swing.*;
 
+import com.zainic.humathics.entity.mob.Player;
 import com.zainic.humathics.graphics.Screen;
 import com.zainic.humathics.input.Keyboard;
+import com.zainic.humathics.input.Mouse;
 import com.zainic.humathics.level.Level;
 import com.zainic.humathics.level.RandomLevel;
+import com.zainic.humathics.level.SpawnLevel;
+import com.zainic.humathics.level.TileCoordinate;
 
 public class Game extends Canvas implements Runnable{
 	private static final long serialVersionUID = 1L;
 	
-	public static int width = 300;
-	public static int height = width / 16 * 9;
-	public static int scale = 3;
-	public static String title = "Humathics";
+	private static int width = 300;
+	private static int height = width / 16 * 9;
+	private static int scale = 3;
+	private static String title = "Humathics";
 	
 	private Thread thread;
 	private JFrame frame;
@@ -28,6 +32,15 @@ public class Game extends Canvas implements Runnable{
 	private Screen screen;
 	private Keyboard key;
 	private Level level;
+	private Player player;
+	
+	public static int getWindowWidth() {
+		return width * scale;
+	}
+	
+	public static int getWindowHeight() {
+		return height * scale;
+	}
 	
 	public Game() {
 		Dimension size = new Dimension(width*scale, height*scale);
@@ -36,9 +49,15 @@ public class Game extends Canvas implements Runnable{
 		frame = new JFrame();
 		screen = new Screen(width, height);
 		key = new Keyboard();
-		level = new RandomLevel(64,64);
+		TileCoordinate playerSpawn = new TileCoordinate(19,62);
+		level = Level.spawn;
+		player = new Player(playerSpawn.x(), playerSpawn.y(), key);
+		player.init(level);
 		
+		Mouse mouse = new Mouse();
 		this.addKeyListener(key);
+		this.addMouseListener(mouse);
+		this.addMouseMotionListener(mouse);
 	}
 	
 	public synchronized void start() {
@@ -87,13 +106,9 @@ public class Game extends Canvas implements Runnable{
 		stop();
 	}
 	
-	int x=0, y=0;
 	public void tick() {
 		key.update();
-		if (key.up) y--;
-		if (key.down) y++;
-		if (key.left) x--;
-		if (key.right) x++;
+		player.update();
 	}
 	
 	public void render() {
@@ -104,7 +119,10 @@ public class Game extends Canvas implements Runnable{
 		}
 		
 		screen.clear();
-		level.render(x, y, screen);
+		int xScroll = player.x - (screen.width >> 1);
+		int yScroll = player.y - (screen.height >> 1);
+		level.render(xScroll, yScroll, screen);
+		player.render(screen);
 		
 		for (int i = 0; i < pixels.length; i++) {
 			pixels[i] = screen.pixels[i];
@@ -114,6 +132,11 @@ public class Game extends Canvas implements Runnable{
 		g.setColor(new Color(255,99,33));
 		g.fillRect(0, 0, this.getWidth(), this.getHeight());
 		g.drawImage(image, 0, 0, this.getWidth(), this.getHeight(), null);
+		//g.setColor(Color.WHITE);
+		//g.setFont(new Font("Courier New", Font.PLAIN, 20));
+		//g.drawString("X : "+player.x+" Y : "+player.y, 100, 100);
+		//g.fillRect(Mouse.getX() - 5, Mouse.getY() - 5, 10, 10);
+		//g.drawString("Button : " + Mouse.getB(), 10, 10);
 		g.dispose(); //remove the graphics after not used
 		bs.show(); //show the buffer that being calculated
 	}
